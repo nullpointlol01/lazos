@@ -35,7 +35,7 @@ async def list_posts(
     date_to: Optional[date] = Query(None, description="Filter by sighting date (to)"),
     provincia: Optional[str] = Query(None, description="Filter by provincia"),
     localidad: Optional[str] = Query(None, description="Filter by localidad"),
-    sort: str = Query("created_at", description="Sort field (created_at or sighting_date)"),
+    sort: str = Query("sighting_date", description="Sort field (created_at or sighting_date)"),
     order: str = Query("desc", description="Sort order (asc or desc)"),
     db: Session = Depends(get_db),
 ):
