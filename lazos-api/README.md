@@ -90,8 +90,7 @@ lazos-api/
 │   └── sync_database.sql  # Script SQL de sincronización
 ├── .env.example         # Variables de entorno de ejemplo
 ├── requirements.txt     # Dependencias Python
-├── alembic.ini          # Configuración de Alembic
-└── DIAGNOSTIC_REPORT.md # Reporte de diagnóstico DB
+└── alembic.ini          # Configuración de Alembic
 ```
 
 ## ⚙️ Variables de Entorno
@@ -170,8 +169,6 @@ Si usás Supabase y las migraciones de Alembic no se aplicaron automáticamente:
 # Ejecutar script SQL en Supabase Dashboard → SQL Editor
 cat scripts/sync_database.sql
 ```
-
-Ver `DIAGNOSTIC_REPORT.md` para más detalles sobre sincronización.
 
 ## 📡 API Endpoints
 

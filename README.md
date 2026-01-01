@@ -119,18 +119,19 @@ Servicios:
 
 ### Para Agentes IA
 
-**📖 [Guía Completa para Agentes IA](/docs/ai/COMPREHENSIVE_GUIDE.md)**
+**📖 [Documentación para Agentes IA](/docs/ai/README.md)**
 
-Documentación exhaustiva que incluye:
+Guías modulares de desarrollo que incluyen:
 - Origen y visión del proyecto
 - Arquitectura técnica completa (backend + frontend)
 - Estado actual de todas las features
-- Modelos de datos y esquemas
-- API endpoints con ejemplos
+- Modelos de datos y esquemas de base de datos
+- API endpoints con ejemplos y schemas
+- Guía completa de frontend (componentes, hooks, páginas)
 - Flujos de usuario detallados
 - Configuración y deployment
-- Decisiones de arquitectura
-- Próximos pasos y roadmap
+- Decisiones de arquitectura (ADRs)
+- Roadmap y próximos pasos
 
 ## ⚙️ Configuración Importante
 
