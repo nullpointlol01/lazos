@@ -10,7 +10,7 @@
 Ayuda a dueños a encontrar sus mascotas perdidas mediante reportes ciudadanos con foto y ubicación.
 
 > 🌐 **Demo en vivo**: [Próximamente]
-> 📖 **Documentación API**: [Ver Swagger UI](http://localhost:8000/docs)
+> 📖 **Documentación API**: [Próximamente]
 
 ---
 
@@ -131,13 +131,6 @@ Documentación exhaustiva que incluye:
 - Configuración y deployment
 - Decisiones de arquitectura
 - Próximos pasos y roadmap
-
-### Para Humanos
-
-- **[Historial de Cambios](/CHANGELOG.md)** - Registro de cambios por versión
-- **[API Reference](http://localhost:8000/docs)** - Swagger UI interactivo
-
----
 
 ## ⚙️ Configuración Importante
 
@@ -270,6 +263,4 @@ Para bugs o sugerencias, [abrir un issue](https://github.com/nullpointlol01/lazo
 
 ---
 
-**Desarrollado con ❤️ usando Claude Code**
-
-*Proyecto diseñado para ser continuado por agentes IA o desarrolladores humanos.*
+**Desarrollado con ❤️ por Agustín Arena usando Claude Code**
