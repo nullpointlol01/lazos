@@ -17,6 +17,7 @@ from app.schemas.post import PostCreate, PostResponse, PostUpdate, PostListRespo
 from app.schemas.common import PaginationMeta
 from app.services.image import ImageService
 from app.services.storage import get_storage_service
+from app.services.text_validation_ai import get_text_validation_ai
 from geoalchemy2.elements import WKTElement
 
 logger = logging.getLogger(__name__)
@@ -35,7 +36,7 @@ async def list_posts(
     date_to: Optional[date] = Query(None, description="Filter by sighting date (to)"),
     provincia: Optional[str] = Query(None, description="Filter by provincia"),
     localidad: Optional[str] = Query(None, description="Filter by localidad"),
-    sort: str = Query("created_at", description="Sort field (created_at or sighting_date)"),
+    sort: str = Query("sighting_date", description="Sort field (created_at or sighting_date)"),
     order: str = Query("desc", description="Sort order (asc or desc)"),
     db: Session = Depends(get_db),
 ):
@@ -300,6 +301,19 @@ async def create_post(
 
         # Primera imagen para backward compatibility en el modelo Post
         first_image_url, first_thumb_url = image_urls[0]
+
+        # Validar texto con IA si hay descripción
+        text_is_valid = True
+        if description and len(description.strip()) >= 10:
+            validator = get_text_validation_ai()
+            validation = await validator.validate_sighting_text(description)
+            text_is_valid = validation["is_valid"]
+            logger.info(f"[AI Validation] valid={text_is_valid}, reason={validation['reason']}")
+
+            # Si el texto no es válido, marcar para aprobación manual
+            if not text_is_valid:
+                pending_approval = True
+                logger.warning(f"[AI Validation] Texto marcado para revisión: {validation['reason']}")
 
         # Crear punto geográfico
         point_wkt = f'POINT({longitude} {latitude})'
