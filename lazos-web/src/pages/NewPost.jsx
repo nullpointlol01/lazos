@@ -419,11 +419,6 @@ export default function NewPost() {
       console.log('🔍 [VALIDATION] Validando imágenes...')
       const imageValidation = await validateImages(formData.images)
 
-      // TEMPORAL: Todas las publicaciones requieren aprobación manual
-      // hasta implementar validación específica de animales
-      let pendingApproval = true
-      let moderationReason = 'Validación manual de contenido'
-
       if (!imageValidation.safe) {
         // Imagen rechazada por contenido inapropiado (NSFW)
         setError(imageValidation.reason)
@@ -431,7 +426,14 @@ export default function NewPost() {
         return
       }
 
-      console.log('⚠️ [VALIDATION] Post marcado para moderación manual')
+      // Solo requiere aprobación si la validación tiene baja confianza
+      let pendingApproval = false
+      if (imageValidation.confidence && imageValidation.confidence < 0.8) {
+        pendingApproval = true
+        console.log('⚠️ [VALIDATION] Imagen requiere revisión manual')
+      } else {
+        console.log('✅ [VALIDATION] Validación aprobada automáticamente')
+      }
       // Create FormData
       const formDataToSend = new FormData()
       // Agregar todas las imágenes con el mismo campo "images"
