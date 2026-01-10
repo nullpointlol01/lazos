@@ -16,7 +16,7 @@ export default function ReportModal({ postId, alertId, isOpen, onClose }) {
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState(null)
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+  import { API_URL } from '@/config/api'
   const itemType = postId ? 'publicación' : 'aviso'
 
   const handleSubmit = async (e) => {

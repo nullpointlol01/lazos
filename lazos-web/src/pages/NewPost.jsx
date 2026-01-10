@@ -8,9 +8,7 @@ import { Select } from '@/components/ui/select'
 import { Camera, MapPin, Loader2, X, AlertTriangle } from 'lucide-react'
 import { useContentValidation } from '@/hooks/useContentValidation'
 import { validateText, sanitizeText } from '@/utils/validateText'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-const GEOREF_API_URL = 'https://apis.datos.gob.ar/georef/api'
+import { API_URL, GEOREF_API_URL, NOMINATIM_API_URL } from '@/config/api'
 
 export default function NewPost() {
   const navigate = useNavigate()
@@ -250,7 +248,7 @@ export default function NewPost() {
         // Reverse geocoding with Nominatim (OpenStreetMap)
         try {
           const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+            `${NOMINATIM_API_URL}/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
             {
               headers: {
                 'Accept-Language': 'es-AR,es',
