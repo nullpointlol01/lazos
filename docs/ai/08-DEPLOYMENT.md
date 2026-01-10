@@ -137,45 +137,7 @@ docker-compose down
 docker-compose up -d --build
 ```
 
-### 8.4 Comandos Útiles
-
-**Backend:**
-```bash
-cd lazos-api
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-pip install -r requirements.txt
-
-# Migraciones
-alembic upgrade head
-alembic revision --autogenerate -m "descripción"
-
-# Dev server
-python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# Tests
-pytest
-pytest -v
-pytest tests/api/test_posts.py -v
-```
-
-**Frontend:**
-```bash
-cd lazos-web
-npm install
-
-# Dev server
-npm run dev
-
-# Build para producción
-npm run build
-
-# Preview build
-npm run preview
-```
-
-### 8.5 Deployment Sugerido
+### 8.4 Deployment Sugerido
 
 **Opción A: Railway + Vercel**
 
@@ -200,4 +162,6 @@ Frontend (Vercel):
 4. GitHub Actions para CI/CD
 
 ---
+
+> **Nota:** Para comandos frecuentes de desarrollo y debugging, ver [CLAUDE.MD](../../CLAUDE.MD) sección "Comandos Frecuentes"
 
