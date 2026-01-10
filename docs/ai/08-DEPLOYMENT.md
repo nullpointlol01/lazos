@@ -107,6 +107,7 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql://lazos:your_password_here@db:5432/lazos
+      PORT: 8000
       R2_PUBLIC_URL: ${R2_PUBLIC_URL}
       R2_ENDPOINT: ${R2_ENDPOINT}
       R2_ACCESS_KEY: ${R2_ACCESS_KEY}
@@ -121,6 +122,11 @@ services:
 volumes:
   postgres_data:
 ```
+
+**Nota sobre el puerto:**
+- El Dockerfile usa `${PORT:-8000}` para permitir que Railway asigne dinámicamente el puerto
+- En desarrollo local, `PORT: 8000` asegura que siempre use el puerto 8000
+- Railway inyecta automáticamente la variable `PORT` en producción
 
 **Comandos:**
 ```bash

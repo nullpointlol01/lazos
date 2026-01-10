@@ -235,6 +235,15 @@ Si las imágenes no cargan:
 2. Verificar que el bucket R2 tenga "Public access via R2.dev subdomain" habilitado
 3. Reiniciar el backend después de cambiar `.env`
 
+### 📡 Configuración del Puerto (Railway)
+
+El backend está configurado para usar la variable de entorno `PORT`:
+- **Railway**: Inyecta automáticamente `$PORT` (puerto dinámico)
+- **Desarrollo local**: Usa puerto 8000 por defecto (definido en `docker-compose.yml`)
+- **Dockerfile**: `CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}`
+
+**No necesitas configurar PORT manualmente**, el Dockerfile usa fallback a 8000 si la variable no existe.
+
 ---
 
 ## 🧪 Testing (Pendiente)
