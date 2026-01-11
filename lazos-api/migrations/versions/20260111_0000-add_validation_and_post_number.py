@@ -17,17 +17,20 @@ depends_on = None
 
 
 def upgrade():
-    # Add validation_service column to posts
-    op.add_column('posts',
-        sa.Column('validation_service', sa.String(length=50), nullable=True)
-    )
-
-    # Add post_number column to posts (if not exists)
-    # Note: User may have already added this via SQL, so we check first
+    # Get connection and inspector to check existing schema
     conn = op.get_bind()
     inspector = sa.inspect(conn)
+
+    # Get existing columns in posts table
     columns = [col['name'] for col in inspector.get_columns('posts')]
 
+    # Add validation_service column to posts if it doesn't exist
+    if 'validation_service' not in columns:
+        op.add_column('posts',
+            sa.Column('validation_service', sa.String(length=50), nullable=True)
+        )
+
+    # Add post_number column to posts if it doesn't exist
     if 'post_number' not in columns:
         op.add_column('posts',
             sa.Column('post_number', sa.Integer(), nullable=True)
@@ -43,14 +46,16 @@ def upgrade():
 
 
 def downgrade():
-    # Drop validation_service column
-    op.drop_column('posts', 'validation_service')
-
-    # Drop post_number column and index (if we created them)
+    # Get connection and inspector
     conn = op.get_bind()
     inspector = sa.inspect(conn)
     columns = [col['name'] for col in inspector.get_columns('posts')]
 
+    # Drop validation_service column if it exists
+    if 'validation_service' in columns:
+        op.drop_column('posts', 'validation_service')
+
+    # Drop post_number column and index if they exist
     if 'post_number' in columns:
         op.drop_index('ix_posts_post_number', table_name='posts')
         op.drop_column('posts', 'post_number')
