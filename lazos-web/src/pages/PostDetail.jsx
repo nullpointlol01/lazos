@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { MapPin, ChevronLeft, ChevronRight, ArrowLeft, AlertTriangle } from 'lucide-react'
 import ReportModal from '@/components/ReportModal'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+import { API_URL } from '@/config/api'
 
 // Iconos de sexo
 const SexIcon = ({ sex }) => {

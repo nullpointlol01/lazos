@@ -6,6 +6,7 @@ import FilterBar from '@/components/FilterBar'
 import { usePosts } from '@/hooks/usePosts'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import { useAutoRefresh } from '@/hooks/useAutoRefresh'
+import { API_URL } from '@/config/api'
 import { RefreshCw } from 'lucide-react'
 
 export default function Home() {
@@ -63,7 +64,7 @@ export default function Home() {
           <p className="text-destructive font-medium mb-2">Error al cargar publicaciones</p>
           <p className="text-sm text-destructive/80">{error}</p>
           <p className="text-xs text-muted-foreground mt-2">
-            Verifica que la API esté corriendo en http://localhost:8000
+            Verifica que la API esté corriendo en {API_URL}
           </p>
         </div>
       </div>

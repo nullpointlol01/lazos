@@ -17,6 +17,8 @@ from app.schemas.post import PostCreate, PostResponse, PostUpdate, PostListRespo
 from app.schemas.common import PaginationMeta
 from app.services.image import ImageService
 from app.services.storage import get_storage_service
+from app.services.text_validation_ai import get_text_validation_ai
+from app.services.hybrid_image_validator import get_hybrid_validator
 from geoalchemy2.elements import WKTElement
 
 logger = logging.getLogger(__name__)
@@ -35,7 +37,7 @@ async def list_posts(
     date_to: Optional[date] = Query(None, description="Filter by sighting date (to)"),
     provincia: Optional[str] = Query(None, description="Filter by provincia"),
     localidad: Optional[str] = Query(None, description="Filter by localidad"),
-    sort: str = Query("created_at", description="Sort field (created_at or sighting_date)"),
+    sort: str = Query("sighting_date", description="Sort field (created_at or sighting_date)"),
     order: str = Query("desc", description="Sort order (asc or desc)"),
     db: Session = Depends(get_db),
 ):
@@ -274,22 +276,46 @@ async def create_post(
                 detail="Debes subir entre 1 y 3 imágenes"
             )
 
-        # Procesar todas las imágenes
-        images_data = []
+        # FASE 1: Leer y validar formato/tamaño de todas las imágenes
+        logger.info(f"📦 [BACKEND] Leyendo {len(images)} imágenes...")
+        raw_images_bytes = []
+
         for idx, image in enumerate(images):
-            logger.info(f"📸 [BACKEND] Procesando imagen {idx + 1}: {image.filename}, {image.content_type}")
+            logger.info(f"📸 [BACKEND] Leyendo imagen {idx + 1}: {image.filename}, {image.content_type}")
 
             # Leer imagen
             image_bytes = await image.read()
             logger.info(f"📦 [BACKEND] Imagen {idx + 1} leída: {len(image_bytes)} bytes")
 
-            # Validar imagen
+            # Validar formato y tamaño
             ImageService.validate_image(image_bytes, max_size_mb=10)
 
-            # Procesar imagen (resize + thumbnail)
+            raw_images_bytes.append(image_bytes)
+
+        # FASE 2: Validación híbrida de contenido (TODAS las imágenes)
+        logger.info(f"🔍 [BACKEND] Iniciando validación híbrida de {len(raw_images_bytes)} imágenes...")
+        hybrid_validator = get_hybrid_validator()
+        validation_result = await hybrid_validator.validate_all(raw_images_bytes)
+
+        validation_service_used = None
+        validation_reason = None
+
+        if not validation_result["is_valid"]:
+            # Marcar para moderación manual
+            pending_approval = True
+            validation_service_used = validation_result["service"]
+            validation_reason = validation_result["reason"]
+            logger.warning(f"⚠️ [BACKEND] Imágenes marcadas para moderación: {validation_reason}")
+        else:
+            logger.info(f"✅ [BACKEND] Todas las imágenes aprobadas por validador híbrido ({validation_result['service']})")
+
+        # FASE 3: Procesar imágenes (resize + thumbnail)
+        logger.info(f"🖼️ [BACKEND] Procesando {len(raw_images_bytes)} imágenes...")
+        images_data = []
+
+        for idx, image_bytes in enumerate(raw_images_bytes):
             processed_image, thumbnail = ImageService.process_upload(image_bytes)
             logger.info(f"✅ [BACKEND] Imagen {idx + 1} procesada: {len(processed_image)} bytes, thumbnail: {len(thumbnail)} bytes")
-
             images_data.append((processed_image, thumbnail))
 
         # Subir todas las imágenes a R2
@@ -300,6 +326,20 @@ async def create_post(
 
         # Primera imagen para backward compatibility en el modelo Post
         first_image_url, first_thumb_url = image_urls[0]
+
+        # Validar texto con IA si hay descripción (solo si no fue rechazado ya por imagen)
+        if description and len(description.strip()) >= 10 and not validation_service_used:
+            text_validator = get_text_validation_ai()
+            text_validation = await text_validator.validate_sighting_text(description)
+            text_is_valid = text_validation["is_valid"]
+            logger.info(f"[Text Validation] valid={text_is_valid}, reason={text_validation['reason']}")
+
+            # Si el texto no es válido, marcar para aprobación manual
+            if not text_is_valid:
+                pending_approval = True
+                validation_service_used = "text_ai"
+                validation_reason = text_validation["reason"]
+                logger.warning(f"[Text Validation] Texto marcado para revisión: {text_validation['reason']}")
 
         # Crear punto geográfico
         point_wkt = f'POINT({longitude} {latitude})'
@@ -319,6 +359,8 @@ async def create_post(
             sighting_date=sighting_date,
             contact_method=contact_method,
             pending_approval=pending_approval,
+            moderation_reason=validation_reason if validation_service_used else None,
+            validation_service=validation_service_used,
         )
 
         db.add(new_post)

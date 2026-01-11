@@ -4,7 +4,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, Heart } from 'lucide-react'
 
 export default function HelpModal({ isOpen, onClose }) {
   return (
@@ -51,6 +51,30 @@ export default function HelpModal({ isOpen, onClose }) {
                 <ExternalLink size={14} />
               </a>
             </div>
+          </section>
+
+          {/* Apoyá el proyecto */}
+          <section>
+            <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+              <Heart size={18} />
+              Apoyá el proyecto
+            </h3>
+            <p className="text-sm text-muted-foreground mb-3">
+              LAZOS es gratuito y sin publicidad. Si te resulta útil, podés invitarme un cafecito.
+            </p>
+            <a
+              href="https://cafecito.app/agus-arena"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block"
+            >
+              <img
+                srcSet="https://cdn.cafecito.app/imgs/buttons/button_6.png 1x, https://cdn.cafecito.app/imgs/buttons/button_6_2x.png 2x, https://cdn.cafecito.app/imgs/buttons/button_6_3.75x.png 3.75x"
+                src="https://cdn.cafecito.app/imgs/buttons/button_6.png"
+                alt="Invitame un café en cafecito.app"
+                className="h-10"
+              />
+            </a>
           </section>
         </div>
       </DialogContent>

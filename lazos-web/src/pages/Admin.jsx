@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { AlertTriangle, Trash2, CheckCircle, TrendingUp, Eye, FileText } from 'lucide-react'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+import { API_URL } from '@/config/api'
 
 const REASON_LABELS = {
   not_animal: 'No es un animal',

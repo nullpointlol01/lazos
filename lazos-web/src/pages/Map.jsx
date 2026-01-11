@@ -5,7 +5,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Locate, Filter, X } from 'lucide-react'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+import { API_URL } from '@/config/api'
 
 // Fix Leaflet default icon issue with Vite
 delete L.Icon.Default.prototype._getIconUrl

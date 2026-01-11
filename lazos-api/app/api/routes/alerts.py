@@ -14,6 +14,7 @@ from app.database import get_db
 from app.models.alert import Alert
 from app.models.post import AnimalEnum
 from app.schemas.alert import AlertCreate, AlertResponse, AlertListResponse
+from app.services.text_validation_ai import get_text_validation_ai
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +135,7 @@ def get_alert(
 
 
 @router.post("/alerts", response_model=AlertResponse, status_code=status.HTTP_201_CREATED)
-def create_alert(
+async def create_alert(
     alert_data: AlertCreate,
     db: Session = Depends(get_db),
 ):
@@ -154,6 +155,19 @@ def create_alert(
     try:
         logger.info("📥 [BACKEND] Creating new alert...")
         logger.info(f"📍 [BACKEND] Location: ({alert_data.latitude}, {alert_data.longitude})")
+
+        # Validar descripción con IA
+        if alert_data.description and len(alert_data.description.strip()) >= 10:
+            validator = get_text_validation_ai()
+            validation = await validator.validate_sighting_text(alert_data.description)
+            text_is_valid = validation["is_valid"]
+            logger.info(f"[AI Validation Alert] valid={text_is_valid}, reason={validation['reason']}")
+
+            if not text_is_valid:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="La descripción no parece corresponder a un avistamiento válido"
+                )
 
         # Create point geographic
         point_wkt = f'POINT({alert_data.longitude} {alert_data.latitude})'

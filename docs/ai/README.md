@@ -1,8 +1,21 @@
 # LAZOS - Documentación para Agentes IA
 
 **Versión**: 2.0
-**Última actualización**: 2026-01-01
+**Última actualización**: 2026-01-10
 **Propósito**: Documentación completa y modular para agentes IA que desarrollan o mantienen el proyecto LAZOS
+
+---
+
+## 🚀 Inicio Rápido
+
+**¿Primera vez en el proyecto?** → Lee **[CLAUDE.MD](../../CLAUDE.MD)** primero para una guía rápida con:
+- Stack y estructura del proyecto
+- Comandos frecuentes
+- Configuración crítica
+- Errores comunes y debugging
+- Checklist de desarrollo
+
+Luego profundiza en la documentación modular según tu tarea específica.
 
 ---
 
@@ -57,22 +70,23 @@ Esta documentación está dividida en módulos temáticos para facilitar la nave
 - Justificación de tecnologías elegidas
 - Trade-offs importantes
 
-### 🔟 [Roadmap y Próximos Pasos](./10-ROADMAP.md)
-- Features planificadas
+### 🔟 [Roadmap y Glosario](./10-ROADMAP.md)
+- Features planificadas (Alta/Media/Baja prioridad)
 - Mejoras técnicas pendientes
-- Backlog priorizado
+- Glosario técnico del proyecto
 
 ---
 
 ## 🎯 Cómo Usar Esta Documentación
 
 ### Para agentes IA nuevos en el proyecto:
-1. **Comienza con** [01-PROJECT-OVERVIEW.md](./01-PROJECT-OVERVIEW.md) para entender el contexto
-2. **Revisa** [02-ARCHITECTURE.md](./02-ARCHITECTURE.md) para comprender la estructura técnica
-3. **Consulta** secciones específicas según tu tarea:
+1. **Lee** [CLAUDE.MD](../../CLAUDE.MD) para contexto rápido y comandos esenciales
+2. **Profundiza según tu tarea**:
    - Trabajando en backend → [04-DATABASE-MODELS.md](./04-DATABASE-MODELS.md) + [05-API-REFERENCE.md](./05-API-REFERENCE.md)
    - Trabajando en frontend → [06-FRONTEND-GUIDE.md](./06-FRONTEND-GUIDE.md)
    - Configurando deployment → [08-DEPLOYMENT.md](./08-DEPLOYMENT.md)
+   - Entender el contexto del negocio → [01-PROJECT-OVERVIEW.md](./01-PROJECT-OVERVIEW.md)
+   - Comprender decisiones técnicas → [09-ARCHITECTURE-DECISIONS.md](./09-ARCHITECTURE-DECISIONS.md)
 
 ### Para actualizar la documentación:
 - **Nueva feature implementada**: Actualizar [03-CURRENT-STATE.md](./03-CURRENT-STATE.md) y [10-ROADMAP.md](./10-ROADMAP.md)
@@ -94,11 +108,12 @@ Esta documentación está dividida en módulos temáticos para facilitar la nave
 
 ## 🔗 Enlaces Rápidos
 
+- **[CLAUDE.MD](../../CLAUDE.MD)** - Guía rápida para agentes IA (start here!)
 - **[README Principal](../../README.md)** - Quickstart para usuarios
 - **[DEPLOYMENT.md](../../DEPLOYMENT.md)** - Guía de deployment detallada
 - **[API Docs (Swagger)](http://localhost:8000/docs)** - Documentación interactiva (requiere backend corriendo)
 
 ---
 
-**Mantenido por**: Agentes IA + Desarrolladores
-**Última revisión**: 2026-01-01
+**Mantenido por**: Agentes IA + Claude Code
+**Última revisión**: 2026-01-10
