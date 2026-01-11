@@ -7,6 +7,7 @@
 │                          POSTS                                │
 ├──────────────────────────────────────────────────────────────┤
 │ id              UUID PRIMARY KEY                             │
+│ post_number     INTEGER UNIQUE NOT NULL  -- autoincremental  │
 │ image_url       VARCHAR(500) (backward compat)               │
 │ thumbnail_url   VARCHAR(500) (backward compat)               │
 │ sex             ENUM('male','female','unknown')              │
@@ -19,6 +20,8 @@
 │ created_at      TIMESTAMP DEFAULT NOW()                      │
 │ updated_at      TIMESTAMP                                    │
 │ is_active       BOOLEAN DEFAULT TRUE                         │
+│ pending_approval BOOLEAN DEFAULT FALSE  -- moderación IA     │
+│ moderation_reason TEXT  -- motivo de moderación              │
 │ contact_method  VARCHAR(200)                                 │
 │ embedding       VECTOR(512)  -- CLIP embedding               │
 │ user_id         UUID REFERENCES users(id) NULL               │
@@ -58,8 +61,8 @@
 │ id              UUID PRIMARY KEY                             │
 │ post_id         UUID REFERENCES posts(id) NULL               │
 │ alert_id        UUID REFERENCES alerts(id) NULL              │
-│ reason          ENUM('not_animal','inappropriate',           │
-│                      'spam','other') NOT NULL                │
+│ reason          ENUM('inappropriate','spam',                 │
+│                      'incorrect_location','other') NOT NULL  │
 │ description     TEXT                                         │
 │ reporter_ip     VARCHAR(45)                                  │
 │ created_at      TIMESTAMP DEFAULT NOW()                      │
@@ -89,6 +92,8 @@ CREATE INDEX idx_posts_animal_type ON posts (animal_type);
 CREATE INDEX idx_posts_size ON posts (size);
 CREATE INDEX idx_posts_sex ON posts (sex);
 CREATE INDEX idx_posts_active ON posts (is_active) WHERE is_active = TRUE;
+CREATE INDEX idx_posts_pending_approval ON posts (pending_approval) WHERE pending_approval = TRUE;
+CREATE UNIQUE INDEX idx_posts_post_number ON posts (post_number);
 
 -- Embeddings (HNSW para búsqueda rápida)
 CREATE INDEX idx_posts_embedding ON posts

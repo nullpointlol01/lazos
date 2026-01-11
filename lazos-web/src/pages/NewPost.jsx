@@ -8,9 +8,7 @@ import { Select } from '@/components/ui/select'
 import { Camera, MapPin, Loader2, X, AlertTriangle } from 'lucide-react'
 import { useContentValidation } from '@/hooks/useContentValidation'
 import { validateText, sanitizeText } from '@/utils/validateText'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-const GEOREF_API_URL = 'https://apis.datos.gob.ar/georef/api'
+import { API_URL, GEOREF_API_URL, NOMINATIM_API_URL } from '@/config/api'
 
 export default function NewPost() {
   const navigate = useNavigate()
@@ -250,7 +248,7 @@ export default function NewPost() {
         // Reverse geocoding with Nominatim (OpenStreetMap)
         try {
           const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+            `${NOMINATIM_API_URL}/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
             {
               headers: {
                 'Accept-Language': 'es-AR,es',
@@ -419,11 +417,6 @@ export default function NewPost() {
       console.log('🔍 [VALIDATION] Validando imágenes...')
       const imageValidation = await validateImages(formData.images)
 
-      // TEMPORAL: Todas las publicaciones requieren aprobación manual
-      // hasta implementar validación específica de animales
-      let pendingApproval = true
-      let moderationReason = 'Validación manual de contenido'
-
       if (!imageValidation.safe) {
         // Imagen rechazada por contenido inapropiado (NSFW)
         setError(imageValidation.reason)
@@ -431,7 +424,14 @@ export default function NewPost() {
         return
       }
 
-      console.log('⚠️ [VALIDATION] Post marcado para moderación manual')
+      // Solo requiere aprobación si la validación tiene baja confianza
+      let pendingApproval = false
+      if (imageValidation.confidence && imageValidation.confidence < 0.8) {
+        pendingApproval = true
+        console.log('⚠️ [VALIDATION] Imagen requiere revisión manual')
+      } else {
+        console.log('✅ [VALIDATION] Validación aprobada automáticamente')
+      }
       // Create FormData
       const formDataToSend = new FormData()
       // Agregar todas las imágenes con el mismo campo "images"

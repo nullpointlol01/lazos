@@ -22,9 +22,10 @@ Ayuda a dueños a encontrar sus mascotas perdidas mediante reportes ciudadanos c
 - **🔍 Búsqueda unificada** - Busca en publicaciones y avisos simultáneamente
 - **🎯 Filtros dinámicos** - Provincia, localidad, tipo, tamaño, sexo con conteos en tiempo real
 - **📍 Geocodificación precisa** - Datos oficiales de Argentina (INDEC) + OpenStreetMap
-- **🛡️ Sistema de moderación IA** - Validación automática de contenido con NSFW.js + TensorFlow.js
-- **🔒 Validación de texto** - Detección de spam, lenguaje ofensivo y contenido inapropiado
-- **👮 Panel de administración** - Moderación de posts pendientes, aprobación/rechazo, gestión de reportes
+- **🛡️ Validación híbrida de imágenes** - Sistema de 2 fases: Python NSFW (rápido, 100% cobertura) + Cloudflare AI (preciso, solo sospechosas)
+- **🤖 Validación inteligente de texto** - Cloudflare AI Workers (Llama-3-8b) para detectar spam y contenido inapropiado
+- **👮 Panel de administración** - Moderación de posts pendientes con información detallada de validación
+- **📊 Sistema de reportes unificado** - Reportes de contenido inapropiado y corrección de ubicación para posts/avisos
 - **🌓 Tema día/noche** - Modo claro y oscuro con tonos cálidos
 - **📱 PWA Ready** - Instalable en dispositivos móviles, diseño responsive mobile-first
 
@@ -47,6 +48,7 @@ Ayuda a dueños a encontrar sus mascotas perdidas mediante reportes ciudadanos c
 ### Servicios
 - **API Georef** (INDEC Argentina) para geocodificación
 - **Nominatim** (OpenStreetMap) para reverse geocoding
+- **Cloudflare AI Workers** para validación de contenido (ResNet-50, Llama-3-8b)
 - **SMTP** para notificaciones de moderación
 
 ---
@@ -148,18 +150,56 @@ Guías modulares de desarrollo que incluyen:
    R2_PUBLIC_URL=https://pub-xxxxx.r2.dev
    ```
 
+### Cloudflare AI Workers (Opcional)
+
+💡 **Mejora la validación de contenido** con IA en la nube.
+
+Si no configurás estas variables, el sistema usará solo el detector Python NSFW (local):
+
+1. Cloudflare Dashboard → AI → Workers AI
+2. Obtener Account ID y API Token
+3. Actualizar `.env`:
+   ```bash
+   CLOUDFLARE_ACCOUNT_ID=tu_account_id
+   CLOUDFLARE_API_TOKEN=tu_api_token
+   ```
+
+**Con Cloudflare AI activado:**
+- ✅ Validación de 100% de imágenes (Python NSFW + ResNet-50)
+- ✅ Validación de texto semántica (Llama-3-8b)
+- ✅ 97% menos llamadas API (solo valida sospechosas)
+
+**Sin Cloudflare AI:**
+- ✅ Solo Python NSFW (detección de tonos de piel)
+- ⚠️ Mayor tasa de falsos positivos
+
 ### Variables de Entorno
 
 **Backend (.env):**
 ```bash
+# Database
 DATABASE_URL=postgresql://user:pass@host:5432/dbname
-R2_PUBLIC_URL=https://pub-xxxxx.r2.dev  # ⚠️ CRÍTICO
+
+# Cloudflare R2 Storage (⚠️ CRÍTICO para imágenes)
+R2_PUBLIC_URL=https://pub-xxxxx.r2.dev
 R2_ENDPOINT=https://xxxxx.r2.cloudflarestorage.com
 R2_ACCESS_KEY=your_key
 R2_SECRET_KEY=your_secret
 R2_BUCKET=lazos-images
+
+# Cloudflare AI Workers (opcional - validación de contenido)
+CLOUDFLARE_ACCOUNT_ID=your_account_id
+CLOUDFLARE_API_TOKEN=your_api_token
+
+# Admin & Moderation
 ADMIN_PASSWORD=your_admin_password
 MODERATOR_EMAIL=tu@email.com
+
+# SMTP (opcional - notificaciones)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=tu@email.com
+SMTP_PASSWORD=your_app_password
 ```
 
 **Frontend (.env):**
@@ -181,9 +221,11 @@ Ver `.env.example` en cada carpeta para la configuración completa.
 - [x] Sistema de avisos rápidos
 - [x] Búsqueda unificada
 - [x] Reportes y moderación con panel admin
-- [x] **Validación de contenido con IA** (NSFW.js + TensorFlow.js)
-- [x] **Validación de texto** (spam, lenguaje ofensivo, URLs sospechosas)
-- [x] **Sistema de aprobación de posts** (pending_approval)
+- [x] **Validación híbrida de imágenes** (Python NSFW + Cloudflare AI Workers)
+- [x] **Validación inteligente de texto** (Cloudflare AI - Llama-3-8b)
+- [x] **Sistema de aprobación de posts** (pending_approval con metadata de validación)
+- [x] **Sistema de reportes unificado** (incluye corrección de ubicación)
+- [x] **Numeración secuencial de posts** (post_number)
 - [x] Tema día/noche
 - [x] PWA con prompt de instalación
 - [x] Geocodificación con API Georef (3,979 localidades de Argentina)

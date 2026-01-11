@@ -84,14 +84,14 @@
 ### 7.3 Reportar Contenido
 
 ```
-1. Usuario ve un post inapropiado en PostDetail
-2. Click en botón "Reportar"
+1. Usuario ve un post inapropiado en PostDetail o en el mapa
+2. Click en botón "Reportar" (contenido) o "Ubicación incorrecta"
 3. ReportModal abre con razones predefinidas:
-   - ◯ No es un animal
    - ◯ Contenido inapropiado
    - ◯ Spam
+   - ◯ Ubicación incorrecta
    - ◯ Otro
-4. Usuario selecciona razón (ej: "Spam")
+4. Usuario selecciona razón (ej: "Spam" o "Ubicación incorrecta")
 5. Opcionalmente escribe descripción adicional (max 1000 chars)
 6. Click en "Enviar reporte"
 7. Frontend: POST /api/v1/reports
@@ -134,7 +134,43 @@
       https://lazos.app/admin
 ```
 
-### 7.4 Moderar Contenido (Panel Admin)
+### 7.4 Sistema de Validación y Aprobación Automática
+
+```
+1. Usuario crea un post con imágenes
+2. Backend recibe el post y ejecuta validación híbrida:
+
+   FASE 1 - Python NSFW (rápida, todas las imágenes en paralelo):
+   - Detecta tonos de piel sospechosos (~200ms)
+   - Si score > 0.6 → marca imagen como sospechosa
+
+   FASE 2 - Cloudflare AI (precisa, solo sospechosas en paralelo):
+   - Si hay imágenes sospechosas → valida con ResNet-50 (~1-2s)
+   - Clasifica contenido (ej: "swimwear", "explicit", etc.)
+
+   VALIDACIÓN DE TEXTO - Cloudflare AI (Llama-3-8b):
+   - Analiza descripción semánticamente
+   - Detecta spam, URLs sospechosas, contenido inapropiado
+
+3. Resultado de validación:
+
+   CASO A - Post limpio (95% de los casos):
+   - pending_approval = False
+   - Post visible inmediatamente
+   - Tiempo total: ~200-300ms
+
+   CASO B - Post sospechoso:
+   - pending_approval = True
+   - moderation_reason = "Imagen sospechosa detectada (Python NSFW: 0.85)"
+   - Post NO visible públicamente
+   - Va a cola de moderación manual
+
+4. Admin recibe notificación de post pendiente
+5. Admin revisa en panel /admin → pestaña "Posts Pendientes"
+6. Admin decide: Aprobar o Rechazar
+```
+
+### 7.5 Moderar Contenido (Panel Admin)
 
 ```
 1. Admin accede a /admin
@@ -142,16 +178,29 @@
    - Muestra input de password
    - Ingresa password
    - Click en "Ingresar"
-3. Frontend: GET /api/v1/admin/reports
-   - Headers: { "X-Admin-Password": password }
+3. Frontend carga datos:
+   - GET /api/v1/admin/pending-posts (Posts pendientes de aprobación)
+   - GET /api/v1/admin/reports (Reportes de usuarios)
+   - GET /api/v1/admin/stats (Estadísticas)
 4. Backend:
    - Valida password contra settings.ADMIN_PASSWORD
    - Si incorrecto → 401 Unauthorized
-   - Si correcto → retorna reportes pendientes con post_data
+   - Si correcto → retorna datos solicitados
 5. Frontend:
    - Guarda password en localStorage
-   - Muestra dashboard con stats
-   - Lista de reportes:
+   - Muestra dashboard con stats:
+     * Total posts / Posts activos
+     * Posts pendientes de aprobación
+     * Reportes pendientes
+
+   PESTAÑA 1 - Posts Pendientes (pending_approval=True):
+   - Lista de posts con validación sospechosa
+   - Muestra moderation_reason (ej: "Imagen sospechosa: Python NSFW 0.85")
+   - Preview de imágenes y contenido
+   - Botones: [Aprobar] [Rechazar]
+
+   PESTAÑA 2 - Reportes:
+   - Lista de reportes de usuarios:
      ┌────────────────────────────────────────────────┐
      │ REPORTE #1 - Spam (3 reportes totales)        │
      │ ┌──────┐                                       │
@@ -161,20 +210,34 @@
      │                                                 │
      │ [Ver post] [Ignorar reporte] [Eliminar post]  │
      └────────────────────────────────────────────────┘
-6. Admin tiene 3 opciones:
+6. Admin tiene múltiples opciones:
 
-   OPCIÓN A - Ver post:
+   OPCIÓN A - Aprobar post pendiente (pestaña Posts Pendientes):
+   - Click en "Aprobar"
+   - POST /api/v1/admin/posts/:id/approve
+   - Backend: pending_approval = False
+   - Post se hace visible públicamente
+   - Frontend: remueve de lista, actualiza stats
+
+   OPCIÓN B - Rechazar post pendiente:
+   - Click en "Rechazar"
+   - POST /api/v1/admin/posts/:id/reject
+   - Backend: is_active = False
+   - Post eliminado definitivamente
+   - Frontend: remueve de lista, actualiza stats
+
+   OPCIÓN C - Ver post:
    - Click en "Ver post"
    - Abre /post/:id en nueva pestaña
-   - Admin revisa contenido
+   - Admin revisa contenido completo
 
-   OPCIÓN B - Ignorar reporte:
+   OPCIÓN D - Ignorar reporte (pestaña Reportes):
    - Click en "Ignorar reporte"
    - POST /api/v1/admin/reports/:id/resolve
    - Backend: marca report.resolved=True
    - Frontend: remueve de lista, actualiza stats
 
-   OPCIÓN C - Eliminar post:
+   OPCIÓN E - Eliminar post reportado:
    - Click en "Eliminar post"
    - Confirmación: "¿Seguro? Esto marcará el post como inactivo"
    - DELETE /api/v1/admin/posts/:id
@@ -182,13 +245,15 @@
      * Post.is_active = False
      * Marca todos los reportes de ese post como resolved=True
    - Frontend: remueve de lista, actualiza stats
+
 7. Dashboard stats actualiza en tiempo real:
    - Total posts: 150
-   - Posts activos: 145 (-1 si eliminó)
-   - Reportes pendientes: 5 (-1 si resolvió)
+   - Posts activos: 145
+   - Posts pendientes de aprobación: 3
+   - Reportes pendientes: 5
 ```
 
-### 7.5 Búsqueda Unificada
+### 7.6 Búsqueda Unificada
 
 ```
 1. Usuario accede a /buscar

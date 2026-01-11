@@ -17,32 +17,48 @@ depends_on = None
 
 
 def upgrade():
-    # Add pending_approval column with default False
-    op.add_column('posts',
-        sa.Column('pending_approval', sa.Boolean(), nullable=False, server_default='false')
-    )
+    # Get connection and inspector to check existing schema
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
 
-    # Add moderation_reason column (nullable)
-    op.add_column('posts',
-        sa.Column('moderation_reason', sa.String(length=500), nullable=True)
-    )
+    # Get existing columns in posts table
+    columns = [col['name'] for col in inspector.get_columns('posts')]
 
-    # Add moderation_date column (nullable)
-    op.add_column('posts',
-        sa.Column('moderation_date', sa.DateTime(timezone=True), nullable=True)
-    )
+    # Add pending_approval column if it doesn't exist
+    if 'pending_approval' not in columns:
+        op.add_column('posts',
+            sa.Column('pending_approval', sa.Boolean(), nullable=False, server_default='false')
+        )
 
-    # Create index on pending_approval for faster queries
-    op.create_index('ix_posts_pending_approval', 'posts', ['pending_approval'], unique=False)
+    # Add moderation_reason column if it doesn't exist
+    if 'moderation_reason' not in columns:
+        op.add_column('posts',
+            sa.Column('moderation_reason', sa.String(length=500), nullable=True)
+        )
 
-    # Create composite index for active and approved posts (most common query)
-    op.create_index(
-        'ix_posts_active_approved',
-        'posts',
-        ['is_active', 'pending_approval'],
-        unique=False,
-        postgresql_where=sa.text('is_active = true AND pending_approval = false')
-    )
+    # Add moderation_date column if it doesn't exist
+    if 'moderation_date' not in columns:
+        op.add_column('posts',
+            sa.Column('moderation_date', sa.DateTime(timezone=True), nullable=True)
+        )
+
+    # Get existing indexes
+    existing_indexes = [idx['name'] for idx in inspector.get_indexes('posts')]
+
+    # Create index on pending_approval if it doesn't exist
+    if 'ix_posts_pending_approval' not in existing_indexes:
+        op.execute("""
+            CREATE INDEX IF NOT EXISTS ix_posts_pending_approval
+            ON posts (pending_approval);
+        """)
+
+    # Create composite index for active and approved posts if it doesn't exist
+    if 'ix_posts_active_approved' not in existing_indexes:
+        op.execute("""
+            CREATE INDEX IF NOT EXISTS ix_posts_active_approved
+            ON posts (is_active, pending_approval)
+            WHERE is_active = true AND pending_approval = false;
+        """)
 
 
 def downgrade():

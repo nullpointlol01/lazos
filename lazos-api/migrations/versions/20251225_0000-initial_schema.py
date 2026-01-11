@@ -19,7 +19,7 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create ENUM types
+    # Create ENUM types (idempotent with checkfirst)
     sex_enum = postgresql.ENUM('male', 'female', 'unknown', name='sex_enum')
     sex_enum.create(op.get_bind(), checkfirst=True)
 
@@ -29,60 +29,89 @@ def upgrade() -> None:
     animal_enum = postgresql.ENUM('dog', 'cat', 'other', name='animal_enum')
     animal_enum.create(op.get_bind(), checkfirst=True)
 
-    # Create users table
-    op.create_table(
-        'users',
-        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column('email', sa.String(255), nullable=False, unique=True),
-        sa.Column('password_hash', sa.String(255), nullable=False),
-        sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
-        sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
-    )
-    op.create_index('ix_users_id', 'users', ['id'])
-    op.create_index('ix_users_email', 'users', ['email'])
+    # Create users table (idempotent)
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id UUID PRIMARY KEY,
+            email VARCHAR(255) NOT NULL UNIQUE,
+            password_hash VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+            is_active BOOLEAN NOT NULL DEFAULT true
+        );
+    """)
 
-    # Create posts table
-    op.create_table(
-        'posts',
-        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column('image_url', sa.String(500), nullable=False),
-        sa.Column('thumbnail_url', sa.String(500), nullable=False),
-        sa.Column('sex', sex_enum, nullable=False, server_default='unknown'),
-        sa.Column('size', size_enum, nullable=False),
-        sa.Column('animal_type', animal_enum, nullable=False, server_default='dog'),
-        sa.Column('description', sa.Text(), nullable=True),
-        sa.Column('location', geoalchemy2.Geography(geometry_type='POINT', srid=4326), nullable=False),
-        sa.Column('location_name', sa.String(200), nullable=True),
-        sa.Column('sighting_date', sa.Date(), nullable=False),
-        sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
-        sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
-        sa.Column('contact_method', sa.String(200), nullable=True),
-        sa.Column('embedding', Vector(512), nullable=True),
-        sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=True),
-        sa.CheckConstraint('char_length(description) <= 1000', name='description_length_check'),
-        # Foreign key will be added when auth is implemented
-        # sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='SET NULL'),
-    )
+    # Create indexes for users (idempotent)
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS ix_users_id ON users (id);
+    """)
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS ix_users_email ON users (email);
+    """)
 
-    # Create indexes for posts
-    op.create_index('ix_posts_id', 'posts', ['id'])
-    op.create_index('ix_posts_sex', 'posts', ['sex'])
-    op.create_index('ix_posts_size', 'posts', ['size'])
-    op.create_index('ix_posts_animal_type', 'posts', ['animal_type'])
-    op.create_index('ix_posts_sighting_date', 'posts', ['sighting_date'], postgresql_ops={'sighting_date': 'DESC'})
-    op.create_index('ix_posts_created_at', 'posts', ['created_at'], postgresql_ops={'created_at': 'DESC'})
-    op.create_index('ix_posts_is_active', 'posts', ['is_active'], postgresql_where=sa.text('is_active = true'))
+    # Create posts table (idempotent)
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS posts (
+            id UUID PRIMARY KEY,
+            image_url VARCHAR(500) NOT NULL,
+            thumbnail_url VARCHAR(500) NOT NULL,
+            sex sex_enum NOT NULL DEFAULT 'unknown',
+            size size_enum NOT NULL,
+            animal_type animal_enum NOT NULL DEFAULT 'dog',
+            description TEXT,
+            location GEOGRAPHY(POINT, 4326) NOT NULL,
+            location_name VARCHAR(200),
+            sighting_date DATE NOT NULL,
+            created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+            updated_at TIMESTAMP WITH TIME ZONE,
+            is_active BOOLEAN NOT NULL DEFAULT true,
+            contact_method VARCHAR(200),
+            embedding VECTOR(512),
+            user_id UUID,
+            CONSTRAINT description_length_check CHECK (char_length(description) <= 1000)
+        );
+    """)
 
-    # Create spatial index for location
-    op.execute('CREATE INDEX idx_posts_location ON posts USING GIST (location);')
+    # Create indexes for posts (idempotent)
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS ix_posts_id ON posts (id);
+    """)
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS ix_posts_sex ON posts (sex);
+    """)
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS ix_posts_size ON posts (size);
+    """)
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS ix_posts_animal_type ON posts (animal_type);
+    """)
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS ix_posts_sighting_date ON posts (sighting_date DESC);
+    """)
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS ix_posts_created_at ON posts (created_at DESC);
+    """)
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS ix_posts_is_active ON posts (is_active) WHERE is_active = true;
+    """)
 
-    # Create vector index for embeddings (HNSW)
-    op.execute('''
-        CREATE INDEX idx_posts_embedding ON posts
-        USING hnsw (embedding vector_cosine_ops)
-        WITH (m = 16, ef_construction = 64);
-    ''')
+    # Create spatial index for location (idempotent)
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS idx_posts_location ON posts USING GIST (location);
+    """)
+
+    # Create vector index for embeddings (HNSW) - idempotent
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_indexes WHERE indexname = 'idx_posts_embedding'
+            ) THEN
+                CREATE INDEX idx_posts_embedding ON posts
+                USING hnsw (embedding vector_cosine_ops)
+                WITH (m = 16, ef_construction = 64);
+            END IF;
+        END $$;
+    """)
 
 
 def downgrade() -> None:

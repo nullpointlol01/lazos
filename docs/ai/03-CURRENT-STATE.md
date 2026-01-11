@@ -37,14 +37,36 @@
 - Mismo sistema de ubicación que Posts
 - Endpoints: GET, POST, DELETE (soft delete)
 
-**Sistema de Reportes y Moderación:**
+**Sistema de Validación Híbrida de Contenido:**
+- **Validación de Imágenes (2 fases en paralelo)**:
+  - Fase 1 (rápida): Python NSFW detector valida TODAS las imágenes (~200ms)
+  - Fase 2 (precisa): Cloudflare AI Workers (ResNet-50) valida solo sospechosas (~1-2s)
+  - 95% de posts validados en < 300ms
+  - Ahorro del 97% en llamadas API de Cloudflare
+- **Validación de Texto Semántica**:
+  - Cloudflare AI Workers con Llama-3-8b
+  - Detecta spam, contenido inapropiado, URLs sospechosas
+  - Análisis contextual del contenido
+- **Sistema de Aprobación**:
+  - Posts sospechosos → `pending_approval=True`
+  - Campo `moderation_reason` con detalles de validación
+  - Panel admin con información detallada para moderación
+
+**Sistema de Reportes Unificado:**
 - Endpoint POST `/api/v1/reports` para reportar posts o alerts
-- Razones: `not_animal`, `inappropriate`, `spam`, `other`
+- Razones: `inappropriate`, `spam`, `incorrect_location`, `other`
+- Tipo `incorrect_location` para correcciones de ubicación
 - Campo `description` opcional para detalles
 - Guarda `reporter_ip` automáticamente
 - Notificación automática por email al moderador (SMTP)
 - Panel admin: GET `/admin/reports`, POST `/admin/reports/{id}/resolve`, DELETE `/admin/posts/{id}`
 - Estadísticas: GET `/admin/stats`
+
+**Numeración Secuencial de Posts:**
+- Campo `post_number` autoincrementable (1, 2, 3...)
+- Trigger PostgreSQL para asignación automática
+- Migración ejecutada para posts existentes
+- URLs tipo `/post/123` más amigables
 
 **Búsqueda Unificada:**
 - Endpoint GET `/api/v1/search` para buscar en posts y alerts
@@ -90,7 +112,9 @@
    - Mapa interactivo con React Leaflet + Leaflet Cluster
    - Tiles de OpenStreetMap
    - Markers personalizados (naranjas para posts, amarillos para alerts)
-   - Popups con thumbnail e info básica
+   - Popups con thumbnail, info básica y botones de reporte
+   - Botón reportar contenido inapropiado
+   - Botón reportar ubicación incorrecta
    - Botón "Mi ubicación"
    - Panel de filtros (animal_type)
    - Leyenda con contadores
@@ -129,17 +153,22 @@
 
 9. **Admin** (`/admin`)
    - Login con password (X-Admin-Password header)
-   - Dashboard con stats (posts totales, activos, reportes pendientes)
-   - Lista de reportes con preview de posts
-   - Botones: Ignorar reporte / Eliminar post
-   - Link directo para ver post
-   - Contador de reportes por post
+   - Dashboard con stats (posts totales, activos, reportes pendientes, posts pendientes de aprobación)
+   - **Pestaña Posts Pendientes**: Lista de posts con `pending_approval=True`
+     - Muestra motivo de moderación (validación de imágenes o texto)
+     - Botones: Aprobar / Rechazar
+     - Preview de imágenes y contenido
+   - **Pestaña Reportes**: Lista de reportes con preview
+     - Tipos: contenido inapropiado, spam, ubicación incorrecta
+     - Contador de reportes por post
+     - Botones: Ignorar / Resolver
+   - Link directo para ver post/aviso
 
 **Componentes:**
 
 - **PostCard**: Tarjeta de post con thumbnail, indicador de múltiples imágenes, iconos de sexo (♂♀?), truncado de descripción, fecha relativa
 - **FilterBar**: Barra de filtros colapsable con badge de filtros activos, contador de publicaciones, chips de filtros activos con botón X, dropdowns de provincia y localidad con conteos, presets de fecha
-- **ReportModal**: Modal para reportar contenido con radio buttons, textarea opcional, loading y success states
+- **ReportModal**: Modal para reportar contenido con radio buttons (inapropiado, spam, ubicación incorrecta, otro), textarea opcional, loading y success states
 - **Layout + BottomNav**: Navegación inferior fija con 4 botones (Home, Avisos, Buscar, Mapa)
 - **FAB**: Floating Action Button para crear nueva publicación
 

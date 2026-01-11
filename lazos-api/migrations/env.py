@@ -9,7 +9,11 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from app.database import Base
-from app.models import Post, User  # Import all models
+# Import all models to ensure they're registered with Base.metadata
+from app.models.post import Post
+from app.models.user import User
+from app.models.alert import Alert
+from app.models.report import Report
 from app.config import settings
 
 # this is the Alembic Config object, which provides

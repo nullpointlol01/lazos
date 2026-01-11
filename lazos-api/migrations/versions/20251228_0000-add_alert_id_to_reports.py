@@ -17,29 +17,47 @@ depends_on = None
 
 
 def upgrade():
-    # Make post_id nullable
-    op.alter_column('reports', 'post_id',
-                    existing_type=postgresql.UUID(),
-                    nullable=True)
+    # Get connection and inspector to check existing schema
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
 
-    # Add alert_id column
-    op.add_column('reports', sa.Column('alert_id', postgresql.UUID(as_uuid=True), nullable=True))
+    # Get existing columns in reports table
+    columns = [col['name'] for col in inspector.get_columns('reports')]
 
-    # Create index on alert_id
-    op.create_index(op.f('ix_reports_alert_id'), 'reports', ['alert_id'], unique=False)
+    # Get existing constraints
+    constraints = [c['name'] for c in inspector.get_check_constraints('reports')]
+    foreign_keys = [fk['name'] for fk in inspector.get_foreign_keys('reports')]
 
-    # Add foreign key constraint
-    op.create_foreign_key(
-        'fk_reports_alert_id_alerts', 'reports', 'alerts',
-        ['alert_id'], ['id'], ondelete='CASCADE'
-    )
+    # Make post_id nullable if it's not already
+    column_info = next((col for col in inspector.get_columns('reports') if col['name'] == 'post_id'), None)
+    if column_info and not column_info['nullable']:
+        op.alter_column('reports', 'post_id',
+                        existing_type=postgresql.UUID(),
+                        nullable=True)
 
-    # Add check constraint (post_id OR alert_id)
-    op.create_check_constraint(
-        'check_post_or_alert',
-        'reports',
-        '(post_id IS NOT NULL AND alert_id IS NULL) OR (post_id IS NULL AND alert_id IS NOT NULL)'
-    )
+    # Add alert_id column if it doesn't exist
+    if 'alert_id' not in columns:
+        op.add_column('reports', sa.Column('alert_id', postgresql.UUID(as_uuid=True), nullable=True))
+
+    # Create index on alert_id if it doesn't exist
+    existing_indexes = [idx['name'] for idx in inspector.get_indexes('reports')]
+    if 'ix_reports_alert_id' not in existing_indexes:
+        op.create_index(op.f('ix_reports_alert_id'), 'reports', ['alert_id'], unique=False)
+
+    # Add foreign key constraint if it doesn't exist
+    if 'fk_reports_alert_id_alerts' not in foreign_keys:
+        op.create_foreign_key(
+            'fk_reports_alert_id_alerts', 'reports', 'alerts',
+            ['alert_id'], ['id'], ondelete='CASCADE'
+        )
+
+    # Add check constraint (post_id OR alert_id) if it doesn't exist
+    if 'check_post_or_alert' not in constraints:
+        op.create_check_constraint(
+            'check_post_or_alert',
+            'reports',
+            '(post_id IS NOT NULL AND alert_id IS NULL) OR (post_id IS NULL AND alert_id IS NOT NULL)'
+        )
 
 
 def downgrade():

@@ -7,8 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
 import { MapPin, Loader2, X } from 'lucide-react'
 import { validateText, sanitizeText } from '@/utils/validateText'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+import { API_URL, NOMINATIM_API_URL } from '@/config/api'
 
 export default function NewAlert() {
   const navigate = useNavigate()
@@ -137,7 +136,7 @@ export default function NewAlert() {
         // Reverse geocoding with Nominatim
         try {
           const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+            `${NOMINATIM_API_URL}/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
             {
               headers: {
                 'Accept-Language': 'es-AR,es',
@@ -209,7 +208,7 @@ export default function NewAlert() {
       console.log('[Geocode] Query:', query)
 
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&addressdetails=1`,
+        `${NOMINATIM_API_URL}/search?format=json&q=${encodeURIComponent(query)}&limit=1&addressdetails=1`,
         {
           headers: {
             'Accept-Language': 'es-AR,es',

@@ -30,6 +30,13 @@ JWT_ALGORITHM=HS256
 JWT_EXPIRE_MINUTES=1440
 
 # ========================================
+# CLOUDFLARE AI WORKERS (opcional - mejora validación)
+# ========================================
+# Si no se configuran, solo se usa Python NSFW detector (local)
+CLOUDFLARE_ACCOUNT_ID=your_cloudflare_account_id
+CLOUDFLARE_API_TOKEN=your_cloudflare_api_token
+
+# ========================================
 # ADMIN & MODERATION
 # ========================================
 ADMIN_PASSWORD=your_admin_password
@@ -82,7 +89,35 @@ VITE_API_URL=http://localhost:8000
 2. Cloudflare configura SSL automáticamente
 3. Agregar a `.env`: `R2_PUBLIC_URL=https://images.lazos.app`
 
-### 8.3 Docker Compose (Desarrollo)
+### 8.3 Configuración Cloudflare AI Workers (Opcional)
+
+**💡 Mejora la validación de contenido con IA en la nube**
+
+Si no configurás estas variables, el sistema funciona solo con Python NSFW detector (local).
+
+**Beneficios con Cloudflare AI:**
+- ✅ Validación de 100% de imágenes (Python NSFW + ResNet-50)
+- ✅ Validación de texto semántica (Llama-3-8b)
+- ✅ 97% menos llamadas API (solo valida sospechosas)
+- ✅ 95% de posts validados en < 300ms
+
+**Configuración:**
+
+1. **Cloudflare Dashboard** → AI → Workers AI
+2. Copiar **Account ID**
+3. Crear **API Token** con permisos:
+   - Workers AI: Read
+4. Agregar a `.env`:
+   ```bash
+   CLOUDFLARE_ACCOUNT_ID=abc123...
+   CLOUDFLARE_API_TOKEN=xxx...
+   ```
+
+**Modelos utilizados:**
+- **Imágenes**: `@cf/microsoft/resnet-50` (clasificación de imágenes)
+- **Texto**: `@cf/meta/llama-3-8b-instruct` (detección de spam/contenido inapropiado)
+
+### 8.4 Docker Compose (Desarrollo)
 
 ```yaml
 # docker-compose.yml
@@ -107,6 +142,7 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql://lazos:your_password_here@db:5432/lazos
+      PORT: 8000
       R2_PUBLIC_URL: ${R2_PUBLIC_URL}
       R2_ENDPOINT: ${R2_ENDPOINT}
       R2_ACCESS_KEY: ${R2_ACCESS_KEY}
@@ -122,6 +158,11 @@ volumes:
   postgres_data:
 ```
 
+**Nota sobre el puerto:**
+- El Dockerfile usa `${PORT:-8000}` para permitir que Railway asigne dinámicamente el puerto
+- En desarrollo local, `PORT: 8000` asegura que siempre use el puerto 8000
+- Railway inyecta automáticamente la variable `PORT` en producción
+
 **Comandos:**
 ```bash
 # Iniciar servicios
@@ -135,44 +176,6 @@ docker-compose down
 
 # Reiniciar con rebuild
 docker-compose up -d --build
-```
-
-### 8.4 Comandos Útiles
-
-**Backend:**
-```bash
-cd lazos-api
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-pip install -r requirements.txt
-
-# Migraciones
-alembic upgrade head
-alembic revision --autogenerate -m "descripción"
-
-# Dev server
-python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# Tests
-pytest
-pytest -v
-pytest tests/api/test_posts.py -v
-```
-
-**Frontend:**
-```bash
-cd lazos-web
-npm install
-
-# Dev server
-npm run dev
-
-# Build para producción
-npm run build
-
-# Preview build
-npm run preview
 ```
 
 ### 8.5 Deployment Sugerido
@@ -200,4 +203,6 @@ Frontend (Vercel):
 4. GitHub Actions para CI/CD
 
 ---
+
+> **Nota:** Para comandos frecuentes de desarrollo y debugging, ver [CLAUDE.MD](../../CLAUDE.MD) sección "Comandos Frecuentes"
 

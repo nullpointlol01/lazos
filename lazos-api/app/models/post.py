@@ -3,7 +3,7 @@ Post model - Represents a pet sighting
 """
 import enum
 from datetime import datetime, date
-from sqlalchemy import Column, String, Text, Boolean, DateTime, Date, Enum, CheckConstraint
+from sqlalchemy import Column, String, Text, Boolean, DateTime, Date, Enum, Integer, CheckConstraint, Sequence
 from sqlalchemy.dialects.postgresql import UUID
 from geoalchemy2 import Geography
 from pgvector.sqlalchemy import Vector
@@ -68,6 +68,16 @@ class Post(Base):
         index=True,
     )
 
+    # Sequential post number for display (e.g., #1, #2, #3)
+    post_number_seq = Sequence('posts_post_number_seq', optional=True)
+    post_number = Column(
+        Integer,
+        post_number_seq,
+        nullable=True,
+        unique=True,
+        index=True
+    )
+
     # Image URLs (required)
     image_url = Column(String(500), nullable=False)
     thumbnail_url = Column(String(500), nullable=False)
@@ -127,6 +137,7 @@ class Post(Base):
     pending_approval = Column(Boolean, default=False, nullable=False, index=True)
     moderation_reason = Column(String(500), nullable=True)
     moderation_date = Column(DateTime(timezone=True), nullable=True)
+    validation_service = Column(String(50), nullable=True)  # "cloudflare_ai", "python_nsfw", "text_ai", etc.
 
     # Optional contact
     contact_method = Column(String(200), nullable=True)

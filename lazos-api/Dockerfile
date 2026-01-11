@@ -18,5 +18,6 @@ COPY . .
 # Expose port
 EXPOSE 8000
 
-# Run uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run migrations and then start uvicorn
+# Use PORT env var from Railway, fallback to 8000 for local development
+CMD alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}

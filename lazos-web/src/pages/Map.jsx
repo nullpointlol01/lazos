@@ -5,7 +5,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Locate, Filter, X } from 'lucide-react'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+import { API_URL } from '@/config/api'
 
 // Fix Leaflet default icon issue with Vite
 delete L.Icon.Default.prototype._getIconUrl
@@ -187,29 +187,31 @@ export default function Map() {
               icon={postIcon}
             >
               <Popup>
-                <div
-                  className="cursor-pointer"
-                  onClick={() => navigate(`/post/${post.id}`)}
-                >
-                  <div className="flex gap-2 mb-2">
-                    <img
-                      src={post.thumbnail_url}
-                      alt="Post"
-                      className="w-16 h-16 object-cover rounded"
-                      onError={(e) => {
-                        e.target.src = 'https://placehold.co/64x64/e5e7eb/6b7280?text=Sin+imagen'
-                      }}
-                    />
-                    <div>
-                      <p className="font-semibold text-sm">
-                        {animalLabels[post.animal_type]}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Post</p>
+                <div className="max-w-[200px]">
+                  <div
+                    className="cursor-pointer mb-2"
+                    onClick={() => navigate(`/post/${post.id}`)}
+                  >
+                    <div className="flex gap-2 mb-2">
+                      <img
+                        src={post.thumbnail_url}
+                        alt="Post"
+                        className="w-16 h-16 object-cover rounded"
+                        onError={(e) => {
+                          e.target.src = 'https://placehold.co/64x64/e5e7eb/6b7280?text=Sin+imagen'
+                        }}
+                      />
+                      <div>
+                        <p className="font-semibold text-sm">
+                          {animalLabels[post.animal_type]}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Post</p>
+                      </div>
                     </div>
+                    <p className="text-xs text-primary hover:underline">
+                      Ver detalles →
+                    </p>
                   </div>
-                  <p className="text-xs text-primary hover:underline">
-                    Ver detalles →
-                  </p>
                 </div>
               </Popup>
             </Marker>
@@ -223,22 +225,24 @@ export default function Map() {
               icon={alertIcon}
             >
               <Popup>
-                <div
-                  className="cursor-pointer max-w-[200px]"
-                  onClick={() => navigate(`/avisos/${alert.id}`)}
-                >
-                  <div className="mb-2">
-                    <p className="font-semibold text-sm">
-                      {animalLabels[alert.animal_type]}
-                    </p>
-                    <p className="text-xs text-muted-foreground mb-2">Aviso rápido</p>
-                    <p className="text-xs text-foreground line-clamp-2">
-                      {alert.description}
+                <div className="max-w-[200px]">
+                  <div
+                    className="cursor-pointer mb-2"
+                    onClick={() => navigate(`/avisos/${alert.id}`)}
+                  >
+                    <div className="mb-2">
+                      <p className="font-semibold text-sm">
+                        {animalLabels[alert.animal_type]}
+                      </p>
+                      <p className="text-xs text-muted-foreground mb-2">Aviso rápido</p>
+                      <p className="text-xs text-foreground line-clamp-2">
+                        {alert.description}
+                      </p>
+                    </div>
+                    <p className="text-xs text-primary hover:underline">
+                      Ver detalles →
                     </p>
                   </div>
-                  <p className="text-xs text-primary hover:underline">
-                    Ver detalles →
-                  </p>
                 </div>
               </Popup>
             </Marker>

@@ -4,7 +4,7 @@ import { Search as SearchIcon, MapPin, Calendar, X } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+import { API_URL } from '@/config/api'
 
 // Animal type labels
 const animalLabels = {
