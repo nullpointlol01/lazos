@@ -291,6 +291,8 @@ async def list_pending_posts(
             "description": post.description,
             "contact_method": post.contact_method,
             "is_active": post.is_active,
+            "moderation_reason": post.moderation_reason,
+            "validation_service": post.validation_service,
         })
 
     return {
