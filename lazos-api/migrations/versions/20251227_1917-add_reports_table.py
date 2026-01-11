@@ -17,26 +17,48 @@ depends_on = None
 
 
 def upgrade():
-    # Create enum for report reasons
-    op.execute("CREATE TYPE report_reason_enum AS ENUM ('not_animal', 'inappropriate', 'spam', 'other')")
+    # Create enum for report reasons (idempotent)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE report_reason_enum AS ENUM ('not_animal', 'inappropriate', 'spam', 'other');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
 
-    # Create reports table
-    op.create_table('reports',
-        sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('post_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('reason', postgresql.ENUM('not_animal', 'inappropriate', 'spam', 'other', name='report_reason_enum'), nullable=False),
-        sa.Column('description', sa.Text(), nullable=True),
-        sa.Column('reporter_ip', sa.String(length=45), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
-        sa.Column('resolved', sa.Boolean(), nullable=False),
-        sa.ForeignKeyConstraint(['post_id'], ['posts.id'], ondelete='CASCADE'),
-        sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_reports_id'), 'reports', ['id'], unique=False)
-    op.create_index(op.f('ix_reports_post_id'), 'reports', ['post_id'], unique=False)
-    op.create_index(op.f('ix_reports_reason'), 'reports', ['reason'], unique=False)
-    op.create_index(op.f('ix_reports_created_at'), 'reports', ['created_at'], unique=False)
-    op.create_index(op.f('ix_reports_resolved'), 'reports', ['resolved'], unique=False)
+    # Create reports table (idempotent)
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS reports (
+            id UUID PRIMARY KEY,
+            post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+            reason report_reason_enum NOT NULL,
+            description TEXT,
+            reporter_ip VARCHAR(45),
+            created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+            resolved BOOLEAN NOT NULL
+        );
+    """)
+
+    # Create indexes (idempotent)
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS ix_reports_id ON reports (id);
+    """)
+
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS ix_reports_post_id ON reports (post_id);
+    """)
+
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS ix_reports_reason ON reports (reason);
+    """)
+
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS ix_reports_created_at ON reports (created_at);
+    """)
+
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS ix_reports_resolved ON reports (resolved);
+    """)
 
 
 def downgrade():
