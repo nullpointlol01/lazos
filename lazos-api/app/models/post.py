@@ -3,7 +3,7 @@ Post model - Represents a pet sighting
 """
 import enum
 from datetime import datetime, date
-from sqlalchemy import Column, String, Text, Boolean, DateTime, Date, Enum, Integer, CheckConstraint
+from sqlalchemy import Column, String, Text, Boolean, DateTime, Date, Enum, Integer, CheckConstraint, Sequence
 from sqlalchemy.dialects.postgresql import UUID
 from geoalchemy2 import Geography
 from pgvector.sqlalchemy import Vector
@@ -69,16 +69,14 @@ class Post(Base):
     )
 
     # Sequential post number for display (e.g., #1, #2, #3)
-    # NOTE: Commented out until migration 20260111_0000 is run in production
-    # Uncomment after running: alembic upgrade head
-    # post_number_seq = Sequence('posts_post_number_seq', optional=True)
-    # post_number = Column(
-    #     Integer,
-    #     post_number_seq,
-    #     nullable=True,
-    #     unique=True,
-    #     index=True
-    # )
+    post_number_seq = Sequence('posts_post_number_seq', optional=True)
+    post_number = Column(
+        Integer,
+        post_number_seq,
+        nullable=True,
+        unique=True,
+        index=True
+    )
 
     # Image URLs (required)
     image_url = Column(String(500), nullable=False)
