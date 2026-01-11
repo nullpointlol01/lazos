@@ -227,14 +227,20 @@ GET /api/v1/map/points/unified
 
 ```yaml
 POST /api/v1/reports
-  Descripción: Reportar un post o alert
+  Descripción: Reportar un post o alert (contenido inapropiado, spam, ubicación incorrecta)
   Body (JSON):
     - post_id: str (uuid, optional)
     - alert_id: str (uuid, optional)
-    - reason: str (required, not_animal|inappropriate|spam|other)
+    - reason: str (required, inappropriate|spam|incorrect_location|other)
     - description: str (optional, max 1000)
   Response: 201 ReportResponse
   Nota: Guarda reporter_ip automáticamente
+
+  Razones:
+    - inappropriate: Contenido inapropiado (NSFW, violencia, etc.)
+    - spam: Publicación spam o irrelevante
+    - incorrect_location: Ubicación incorrecta del avistamiento
+    - other: Otro motivo (requiere descripción)
 
 GET /api/v1/admin/reports
   Descripción: Listar reportes pendientes (requiere autenticación)
@@ -280,8 +286,38 @@ GET /api/v1/admin/stats
       "active_posts": 145,
       "total_alerts": 50,
       "active_alerts": 48,
-      "pending_reports": 5
+      "pending_reports": 5,
+      "pending_approval": 3
     }
+
+GET /api/v1/admin/pending-posts
+  Descripción: Listar posts pendientes de aprobación (pending_approval=True)
+  Headers: X-Admin-Password
+  Response: 200
+    {
+      "data": [
+        {
+          "id": "uuid",
+          "post_number": 123,
+          "description": "...",
+          "images": [...],
+          "pending_approval": true,
+          "moderation_reason": "Imagen sospechosa detectada por validación (Python NSFW: 0.85)",
+          "created_at": "...",
+          ...
+        }
+      ]
+    }
+
+POST /api/v1/admin/posts/{id}/approve
+  Descripción: Aprobar post pendiente (pending_approval=False)
+  Headers: X-Admin-Password
+  Response: 200 PostResponse
+
+POST /api/v1/admin/posts/{id}/reject
+  Descripción: Rechazar post pendiente (soft delete is_active=False)
+  Headers: X-Admin-Password
+  Response: 204
 ```
 
 ### 5.2 Schemas Pydantic
@@ -290,6 +326,7 @@ GET /api/v1/admin/stats
 ```python
 class PostResponse(BaseModel):
     id: UUID
+    post_number: int  # número secuencial único (1, 2, 3...)
     sex: SexEnum  # male/female/unknown
     size: SizeEnum  # small/medium/large
     animal_type: AnimalEnum  # dog/cat/other
@@ -300,6 +337,8 @@ class PostResponse(BaseModel):
     sighting_date: date
     created_at: datetime
     is_active: bool
+    pending_approval: bool  # True si está pendiente de moderación
+    moderation_reason: str | None  # Motivo de moderación (validación de imágenes/texto)
     contact_method: str | None
     images: list[PostImageResponse]  # array de imágenes
 
