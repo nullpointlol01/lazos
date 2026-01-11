@@ -13,6 +13,7 @@ from app.database import Base
 
 class ReportReasonEnum(str, enum.Enum):
     """Report reason enumeration"""
+    incorrect_location = "incorrect_location"
     not_animal = "not_animal"
     inappropriate = "inappropriate"
     spam = "spam"

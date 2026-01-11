@@ -18,6 +18,8 @@ from app.schemas.common import PaginationMeta
 from app.services.image import ImageService
 from app.services.storage import get_storage_service
 from app.services.text_validation_ai import get_text_validation_ai
+from app.services.image_validation_ai import get_image_validation_ai
+from app.services.nsfw_detector import detect_nsfw
 from geoalchemy2.elements import WKTElement
 
 logger = logging.getLogger(__name__)
@@ -277,6 +279,9 @@ async def create_post(
 
         # Procesar todas las imágenes
         images_data = []
+        validation_service_used = None
+        validation_reason = None
+
         for idx, image in enumerate(images):
             logger.info(f"📸 [BACKEND] Procesando imagen {idx + 1}: {image.filename}, {image.content_type}")
 
@@ -284,8 +289,30 @@ async def create_post(
             image_bytes = await image.read()
             logger.info(f"📦 [BACKEND] Imagen {idx + 1} leída: {len(image_bytes)} bytes")
 
-            # Validar imagen
+            # Validar imagen (formato y tamaño)
             ImageService.validate_image(image_bytes, max_size_mb=10)
+
+            # Validar contenido NSFW con Cloudflare AI (primera imagen solamente para performance)
+            if idx == 0:
+                image_validator = get_image_validation_ai()
+                cloudflare_result = await image_validator.validate_image(image_bytes)
+
+                # Si Cloudflare AI falla o está deshabilitado, usar fallback Python
+                if cloudflare_result is None:
+                    logger.warning("[Validation] Cloudflare AI falló, usando fallback Python NSFW")
+                    python_result = await detect_nsfw(image_bytes)
+
+                    if not python_result["is_valid"]:
+                        pending_approval = True
+                        validation_service_used = python_result["service"]
+                        validation_reason = python_result["reason"]
+                        logger.warning(f"[Validation] Imagen marcada para revisión (Python): {validation_reason}")
+
+                elif not cloudflare_result["is_valid"]:
+                    pending_approval = True
+                    validation_service_used = cloudflare_result["service"]
+                    validation_reason = cloudflare_result["reason"]
+                    logger.warning(f"[Validation] Imagen marcada para revisión (Cloudflare): {validation_reason}")
 
             # Procesar imagen (resize + thumbnail)
             processed_image, thumbnail = ImageService.process_upload(image_bytes)
@@ -302,18 +329,19 @@ async def create_post(
         # Primera imagen para backward compatibility en el modelo Post
         first_image_url, first_thumb_url = image_urls[0]
 
-        # Validar texto con IA si hay descripción
-        text_is_valid = True
-        if description and len(description.strip()) >= 10:
-            validator = get_text_validation_ai()
-            validation = await validator.validate_sighting_text(description)
-            text_is_valid = validation["is_valid"]
-            logger.info(f"[AI Validation] valid={text_is_valid}, reason={validation['reason']}")
+        # Validar texto con IA si hay descripción (solo si no fue rechazado ya por imagen)
+        if description and len(description.strip()) >= 10 and not validation_service_used:
+            text_validator = get_text_validation_ai()
+            text_validation = await text_validator.validate_sighting_text(description)
+            text_is_valid = text_validation["is_valid"]
+            logger.info(f"[Text Validation] valid={text_is_valid}, reason={text_validation['reason']}")
 
             # Si el texto no es válido, marcar para aprobación manual
             if not text_is_valid:
                 pending_approval = True
-                logger.warning(f"[AI Validation] Texto marcado para revisión: {validation['reason']}")
+                validation_service_used = "text_ai"
+                validation_reason = text_validation["reason"]
+                logger.warning(f"[Text Validation] Texto marcado para revisión: {text_validation['reason']}")
 
         # Crear punto geográfico
         point_wkt = f'POINT({longitude} {latitude})'
@@ -333,6 +361,8 @@ async def create_post(
             sighting_date=sighting_date,
             contact_method=contact_method,
             pending_approval=pending_approval,
+            moderation_reason=validation_reason if validation_service_used else None,
+            validation_service=validation_service_used,
         )
 
         db.add(new_post)

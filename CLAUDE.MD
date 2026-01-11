@@ -212,6 +212,10 @@ R2_ACCESS_KEY=your_key
 R2_SECRET_KEY=your_secret
 R2_BUCKET=lazos-images
 
+# Cloudflare AI (para validación de contenido)
+CLOUDFLARE_ACCOUNT_ID=your_account_id
+CLOUDFLARE_API_TOKEN=your_api_token
+
 # Admin
 ADMIN_PASSWORD=your_admin_password
 MODERATOR_EMAIL=tu@email.com
@@ -369,7 +373,11 @@ logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 - **No confiar en input del usuario**: Validar con Pydantic
 - **SQL injection**: Usar SQLAlchemy ORM (nunca raw SQL con f-strings)
 - **XSS**: FastAPI escapa automáticamente JSON
-- **NSFW content**: Usar NSFW.js en frontend antes de upload
+- **NSFW content**:
+  - Cloudflare AI Workers para validación de imágenes (modelo ResNet-50)
+  - Fallback Python NSFW detector (análisis de tonos de piel)
+  - Validación semántica de texto con Cloudflare AI (Llama-3-8b)
+  - Posts sospechosos van a moderación manual (pending_approval=True)
 - **Rate limiting**: Implementar en producción (pendiente)
 
 ### Frontend
