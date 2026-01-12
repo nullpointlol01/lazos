@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Modo Día - Tonos cálidos durazno/melocotón con variaciones */
+    --background: 24 100% 97%;         /* #FFF8F3 - Fondo principal cálido */
+    --foreground: 222.2 84% 4.9%;      /* Texto principal oscuro */
+    --card: 0 0% 100%;                 /* #FFFFFF - Tarjetas blanco puro */
+    --card-foreground: 222.2 84% 4.9%; /* Texto en tarjetas */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;      /* Azul para botones primarios */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 24 60% 94%;           /* #FFE8D8 - Tabs, chips, fondos secundarios */
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 24 60% 94%;               /* #FFE8D8 - Igual que secondary */
+    --muted-foreground: 215.4 16.3% 46.9%; /* Texto secundario con buen contraste */
+    --accent: 24 50% 92%;              /* #FFE0CC - Hover suave */
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 28 40% 90%;              /* Bordes sutiles cálidos */
+    --input: 28 40% 90%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+
+    /* Colores hover para modo día */
+    --hover-button: 24 45% 90%;        /* #FFD9C4 - Hover botones */
+    --hover-card: 24 50% 92%;          /* #FFE0CC - Hover cards */
+  }
+
+  .dark {
+    /* Modo Noche - Oscuro neutro con buen contraste */
+    --background: 222 47% 11%;         /* Fondo principal oscuro */
+    --foreground: 226 29% 91%;         /* Texto principal claro */
+    --card: 232 33% 20%;               /* Tarjetas oscuras */
+    --card-foreground: 226 29% 91%;    /* Texto en tarjetas claro */
+    --primary: 152 28% 60%;            /* Verde teal */
+    --primary-foreground: 222 47% 11%;
+    --secondary: 232 33% 25%;          /* Fondo secundario */
+    --secondary-foreground: 226 29% 91%;
+    --muted: 232 33% 25%;              /* Fondo muted */
+    --muted-foreground: 220 13% 69%;   /* Texto secundario con mejor contraste */
+    --accent: 232 33% 28%;             /* Hover sutil oscuro - CORREGIDO */
+    --accent-foreground: 226 29% 91%;  /* Texto claro - CORREGIDO */
+    --popover: 232 33% 20%;
+    --popover-foreground: 226 29% 91%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 226 29% 91%;
+    --border: 232 33% 30%;
+    --input: 232 33% 30%;
+    --ring: 152 28% 60%;
+
+    /* Colores hover para modo noche - más sutiles, ligeramente más claros */
+    --hover-button: 232 33% 28%;       /* Ligeramente más claro que secondary */
+    --hover-card: 232 33% 23%;         /* Ligeramente más claro que card */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground transition-colors duration-200;
+  }
+}
+
+@layer utilities {
+  @keyframes slide-up {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+}
+
+/* Leaflet Popup Dark Mode Support */
+.dark .leaflet-popup-content-wrapper {
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border: 1px solid hsl(var(--border));
+}
+
+.dark .leaflet-popup-tip {
+  background-color: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
+
+.dark .leaflet-popup-close-button {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.dark .leaflet-popup-close-button:hover {
+  color: hsl(var(--foreground)) !important;
+}
